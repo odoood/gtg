@@ -16,12 +16,7 @@ When you're ready to commit your changes (or even while you are making them),
 you should probably run the units tests to see if all is fine
 (or at least that you did not introduce more problems than before):
 
-    $ make check=python3
-    ./run-tests
-    ...........
-    ----------------------------------------------------------------------
-    Ran 11 tests in 0.063s
-    OK
+    $ make check
 
 As our project has a tox.ini file, if you have the "tox" Python testing package
 installed, you can also run the "tox" command to run tests.
@@ -81,7 +76,7 @@ Please leave the number of issues in the code smaller than when you found it ;)
 
 If you want to run all the code quality & style checkers at once, run this:
 
-    $ make lint=python3
+    $ make lint
 
 
 # Commenting-out code

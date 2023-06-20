@@ -13,9 +13,9 @@ Because of that, you may need to update the translation files manually.
 
 # Updating the translation files
 
-1. Follow the [readme][readme] to pull GTG and install the dependencies, especially meson and gettext.
+1. Follow the [readme][readme] to pull GTG and install the dependencies, especially gettext.
 2. Run `./launch.sh` in the repository root at least once. The folder `.local_build` should've been generated and GTG should run. Exit GTG.
-3. Run `ninja -C .local_build gtg-pot gtg-update-po` to update the translation files.
+3. Run `make gtg-update-po` to update the translation files.
 
 [readme]: ../../README.md
 

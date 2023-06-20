@@ -118,8 +118,6 @@ Any page that uses this `ui` element should include all of the following schemas
       id="page-id">
 ```
 
-## Updating `meson.build`
-The [meson.build](https://github.com/getting-things-gnome/gtg/blob/master/docs/user_manual/meson.build) file that resides in the `user_manual` folder needs to contain all of the pages and media (e.g., images and videos) contained in the user manual. Ensure that all .page and .png files are listed in the `sources` or `media` sections accordingly. 
 ## Building HTML Files
 Use the following command to build an HTML version for use outside of the packaged help project (e.g., in a blog):
 ```

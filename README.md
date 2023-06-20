@@ -37,7 +37,6 @@ git pull --rebase
 
 ### Dependencies
 
-* meson (>= 0.51.0)
 * python3 (>= 3.8)
 * python-caldav
 * pycairo
@@ -60,11 +59,11 @@ You can get most of those from your distribution packages:
 
 ```sh
 # On Fedora:
-sudo dnf install meson python3-cairo python3-gobject gtk3 itstool gettext python3-lxml libsecret
+sudo dnf install python3-cairo python3-gobject gtk3 itstool gettext python3-lxml libsecret
 # On Debian 10 (buster), you need to install the backported version, activate it with:
 echo 'deb http://deb.debian.org/debian buster-backports main' | sudo tee -a /etc/apt/sources.list
 # On Debian/Ubuntu:
-sudo apt install meson python3-gi-cairo python3-gi gir1.2-pango-1.0 gir1.2-gdkpixbuf-2.0 gir1.2-gtk-3.0 itstool gettext python3-lxml libgirepository1.0-dev libsecret-1.0 gir1.2-secret-1
+sudo apt install python3-gi-cairo python3-gi gir1.2-pango-1.0 gir1.2-gdkpixbuf-2.0 gir1.2-gtk-3.0 itstool gettext python3-lxml libgirepository1.0-dev libsecret-1.0 gir1.2-secret-1
 ```
 
 liblarch may be harder to come by until distributions package the python3 version of it, alongside GTG 0.6+ itself.
@@ -114,7 +113,7 @@ sudo apt install python3-cheetah pdftk-java texlive-extra-utils texlive-latex-ba
 
 ### Running the beast
 
-In order to run the developer/git version of GTG, you need to launch the `debug.sh` script
+In order to run the developer/git version of GTG, you need to launch the `launch.sh` script
 There is a shortcut to it in the root directory where you downloaded the code, that you can execute simply with this command:
 
 ```sh
@@ -123,7 +122,7 @@ There is a shortcut to it in the root directory where you downloaded the code, t
 
 This is the safest way to run the git version, as it does not touch your normal user data (see below).
 
-You can use `./launch.sh -?` to get a list of options useful for development
+You can use `./launch.sh -h` to get a list of options useful for development
 you can append to the command, such as:
 * `-d` to enable debug logs
 * `-w` to enable additional [python development][pythondevmode] stuff
@@ -132,10 +131,9 @@ you can append to the command, such as:
   useful to run under a debugger: `./launch.sh -p 'python3 -m pudb'` (with
   [pudb][pudb]) or a profiler: `./launch.sh -p 'python3 -m cProfile -o gtg.prof'`
 * `-s dataset` to use the dataset called `dataset`. It'll store it inside the `tmp`
-  folder of the current working directory. If it doesn't exists, it'll create
-  an new clean one. There are pre-made ones you can use by replacing `dataset`
+  folder of the current working directory. If it doesn't exist, it'll create
+  a new clean one. There are pre-made ones you can use by replacing `dataset`
   with one of the following:
-  * `bryce` - An anonymized dataset with a fair number of tasks
   * `screenshots` - Pre-made tasks that can be used to show off GTG
 
 If you somehow need to pass arguments directly to the `gtg` binary itself,
@@ -153,8 +151,8 @@ GTK_DEBUG=interactive ./launch.sh
 
 [gtk-interactive]: https://developer.gnome.org/gtk3/stable/gtk-running.html#interactive-debugging
 
-If there is any problem with meson (the build system) or anything else,
-try deleting the build folder first and try again: `rm -rf .local_build`.
+If there is any problem with anything, try cleaning the project first with `make
+clean` and building again with `make`.
 No data should be lost since it is just re-generateable build files.
 
 [pythondevmode]: https://docs.python.org/3/library/devmode.html
@@ -176,10 +174,10 @@ It depends:
 
 [basedir-spec]: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
-If you want to import a copy of your gtg data to the development version, simply run at the repository root one of the following commands:
+If you want to import a copy of your gtg data to the development version, simply run `launch.sh` with the appropriate `-s` option:
 ```sh
-./scripts/import_tasks_from_local.sh # local/system-wide install data
-./scripts/import_tasks_from_flatpak.sh # flatpak data
+./launch.sh -s local    # local/system-wide install data
+./launch.sh -s flatpak  # flatpak data
 ```
 
 # Viewing the user manual
