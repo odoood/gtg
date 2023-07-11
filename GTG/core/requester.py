@@ -53,47 +53,8 @@ class Requester(GObject.GObject):
     def get_main_view(self):
         return self.__basetree.get_main_view()
 
-    def is_displayed(self, task):
-        return self.__basetree.get_viewtree(name='active').is_displayed(task)
-
     def get_basetree(self):
         return self.__basetree
-
-    def apply_global_filter(self, tree, filtername):
-        """
-        This method also update the viewcount of tags
-        TODO(jakubbrindza): Evaluate if this is used somewhere before release
-        """
-        tree.apply_filter(filtername)
-        for t in self.get_all_tags():
-            ta = self.get_tag(t)
-            ta.apply_filter(filtername)
-
-    def unapply_global_filter(self, tree, filtername):
-        """
-        TODO(jakubbrindza): Evaluate if this is used somewhere before release
-        """
-        tree.unapply_filter(filtername)
-        for t in self.get_all_tags():
-            ta = self.get_tag(t)
-            ta.unapply_filter(filtername)
-
-    # Filters bank #######################
-    # List, by name, all available filters
-    def list_filters(self):
-        return self.__basetree.list_filters()
-
-    # Add a filter to the filter bank
-    # Return True if the filter was added
-    # Return False if the filter_name was already in the bank
-    def add_filter(self, filter_name, filter_func):
-        return self.__basetree.add_filter(filter_name, filter_func)
-
-    # Remove a filter from the bank.
-    # Only custom filters that were added here can be removed
-    # Return False if the filter was not removed
-    def remove_filter(self, filter_name):
-        return self.__basetree.remove_filter(filter_name)
 
     # Tasks ##########################
     def has_task(self, tid):
@@ -143,21 +104,6 @@ class Requester(GObject.GObject):
         # send the signal before actually deleting the task !
         log.debug("deleting task %s", tid)
         return self.__basetree.del_node(tid, recursive=recursive)
-
-    def get_task_id(self, task_title):
-        """ Heuristic which convert task_title to a task_id
-
-        Return a first task which has similar title """
-
-        task_title = task_title.lower()
-        tasks = self.get_tasks_tree('active', False).get_all_nodes()
-        tasktree = self.get_main_view()
-        for task_id in tasks:
-            task = tasktree.get_node(task_id)
-            if task_title == task.get_title().lower():
-                return task_id
-
-        return None
 
     # Tags ##########################
     def get_tag_tree(self):
