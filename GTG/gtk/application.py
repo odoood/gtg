@@ -39,7 +39,7 @@ from GTG.core import clipboard
 from GTG.core.plugins.engine import PluginEngine
 from GTG.core.plugins.api import PluginAPI
 from GTG.backends import BackendFactory
-from GTG.core.datastore import DataStore
+from GTG.core import requester
 from GTG.core.dirs import CSS_DIR
 from GTG.core.dates import Date
 from GTG.gtk.backends import BackendsDialog
@@ -119,15 +119,13 @@ class Application(Gtk.Application):
             self.ds.data_path = os.path.join(DATA_DIR, 'gtg_data2.xml')
 
             # Register backends
-            datastore = DataStore()
+            self.req = requester.Requester()
 
             for backend_dic in BackendFactory().get_saved_backends_list():
-                datastore.register_backend(backend_dic)
+                self.req.register_backend(backend_dic)
 
             # Save the backends directly to be sure projects.xml is written
-            datastore.save(quit=False)
-
-            self.req = datastore.get_requester()
+            self.req.save(quit=False)
 
             self.config = self.req.get_config("browser")
             self.config_plugins = self.req.get_config("plugins")

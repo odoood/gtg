@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 class TaskSource():
     """
-    Transparent interface between the real backend and the DataStore.
+    Transparent interface between the real backend and the datastore.
     Is in charge of connecting and disconnecting to signals
     """
 
@@ -41,7 +41,7 @@ class TaskSource():
         self.backend = backend
         self.req = requester
         self.backend.register_datastore(datastore)
-        self.tasktree = datastore.get_tasks_tree().get_main_view()
+        self.tasktree = datastore.get_raw_tasks_tree().get_main_view()
         self.to_set = deque()
         self.to_remove = deque()
         self.please_quit = False
@@ -107,7 +107,7 @@ class TaskSource():
 
     def queue_set_task(self, tid, path=None):
         """
-        Updates the task in the DataStore.  Actually, it adds the task to a
+        Updates the task in the datastore.  Actually, it adds the task to a
         queue to be updated asynchronously.
 
         @param task: The Task object to be updated.

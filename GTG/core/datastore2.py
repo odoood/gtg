@@ -386,7 +386,7 @@ class Datastore2:
     # --------------------------------------------------------------------------
 
     def get_all_backends(self, disabled=False):
-        """returns list of all registered backends for this DataStore.
+        """returns list of all registered backends for this datastore.
 
         @param disabled: If disabled is True, attaches also the list of
                 disabled backends
@@ -415,7 +415,7 @@ class Datastore2:
 
     def register_backend(self, backend_dic):
         """
-        Registers a TaskSource as a backend for this DataStore
+        Registers a TaskSource as a backend for this datastore
 
         @param backend_dic: Dictionary object containing all the
                             parameters to initialize the backend

@@ -8,7 +8,7 @@ from dateutil.tz import UTC
 from GTG.backends.backend_caldav import (CATEGORIES, CHILDREN_FIELD,
                                          DAV_IGNORE, PARENT_FIELD, UID_FIELD,
                                          Backend, DueDateField, Translator)
-from GTG.core.datastore import DataStore
+from GTG.core.requester import Requester
 from GTG.core.dates import LOCAL_TIMEZONE, Date
 from GTG.core.task import Task
 from mock import Mock, patch
@@ -92,7 +92,7 @@ class CalDAVTest(TestCase):
 
     @staticmethod
     def _setup_backend():
-        datastore = DataStore()
+        datastore = Requester()
         parameters = {'pid': 'favorite', 'service-url': 'color',
                       'username': 'blue', 'password': 'no red', 'period': 1}
         backend = Backend(parameters)
@@ -178,7 +178,7 @@ class CalDAVTest(TestCase):
         self.assertTrue("DTSTART:" not in serialized)
 
     def test_translate(self):
-        datastore = DataStore()
+        datastore = Requester()
         root_task = datastore.task_factory('root-task', newtask=True)
         root_task.add_tag('@my-tag')
         root_task.add_tag('@my-other-tag')

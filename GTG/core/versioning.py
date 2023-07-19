@@ -26,7 +26,7 @@ from lxml import etree as et
 from GTG.core.dates import Date
 from GTG.core.dirs import DATA_DIR
 from GTG.core import xml
-from GTG.core import datastore
+from GTG.core import requester
 
 from datetime import date
 from typing import Optional, Tuple
@@ -39,7 +39,7 @@ tags_cache = {}
 tid_cache = {}
 
 
-def convert(path: str, ds: datastore) -> et.ElementTree:
+def convert(path: str, ds: requester) -> et.ElementTree:
     """Convert old XML into the new format."""
 
     old_tree = xml.open_file(path, 'project')
@@ -137,7 +137,7 @@ def convert_tags(old_tree: et.Element) -> Tuple[et.Element, et.Element]:
     return taglist, searchlist
 
 
-def convert_task(task: et.Element, ds: datastore) -> Optional[et.Element]:
+def convert_task(task: et.Element, ds: requester) -> Optional[et.Element]:
     """Convert old task XML into the new format."""
 
     tid = task.attrib['id']

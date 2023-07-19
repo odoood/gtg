@@ -129,7 +129,7 @@ class Task(TreeNode):
 
     def duplicate(self):
         """ Duplicates a task with a new ID """
-        copy = self.req.ds.new_task()
+        copy = self.req.new_task()
         # Inherit the recurrency
         copy.set_recurring(True, self.recurring_term)
         nextdate = self.get_next_occurrence()
@@ -789,7 +789,7 @@ class Task(TreeNode):
     def tag_added_by_id(self, tid):
         """Add a tag by its ID"""
 
-        tag = self.req.ds.get_tag_by_id(tid)
+        tag = self.req.get_tag_by_id(tid)
 
         if tag:
             self.tag_added(tag.get_name())
