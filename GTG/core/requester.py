@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # Getting Things GNOME! - a personal organizer for the GNOME desktop
+# Copyright (c) 2023 - odoood
 # Copyright (c) 2008-2013 - Lionel Dricot & Bertrand Rousseau
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -253,9 +254,7 @@ class Requester(GObject.GObject):
     # Accessor to embedded objects in datastore ##############################
     def get_tagstore(self):
         """
-        Return the Tagstore associated with this datastore
-
-        @return GTG.core.tagstore.TagStore: the tagstore object
+        Return the tagstore associated with this datastore
         """
         return self._tagstore
 
