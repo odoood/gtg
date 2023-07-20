@@ -97,20 +97,6 @@ class ModifyTagsDialog():
                     task.remove_tag(tag)
             task.sync()
 
-        # TODO: New Core
-        for tid in self.tasks:
-            t = self.app.ds.tasks.get(tid)
-
-            for tag, is_positive in tags:
-                _tag = self.app.ds.tags.new(tag)
-
-                if is_positive:
-                    t.add_tag(_tag)
-                else:
-                    t.remove_tag(_tag)
-
-        self.app.ds.save()
-
         # Rember the last actions
         self.last_tag_entry = self.tag_entry.get_text()
         self.last_apply_to_subtasks = self.apply_to_subtasks.get_active()

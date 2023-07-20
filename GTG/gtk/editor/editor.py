@@ -98,13 +98,6 @@ class TaskEditor:
         # Recurrence
         self.recurring_menu = RecurringMenu(self.req, task.tid, self.builder)
 
-        # TODO: Remove old code when new core is stable
-        # If new add to new DS
-        if thisisnew and task.tid not in self.app.ds.tasks.lookup.keys():
-            new_task = Task2(task.tid, task.get_title())
-            self.app.ds.tasks.add(new_task)
-
-
         # Create our dictionary and connect it
         dic = {
             "on_tags_popover": self.open_tags_popover,
@@ -276,18 +269,10 @@ class TaskEditor:
 
 
     def tag_added(self, name):
-
         self.task.tag_added(name)
-        t = self.app.ds.tasks.get(self.task.tid)
-        t.add_tag(self.app.ds.tags.new(name))
-
 
     def tag_removed(self, name):
-
         self.task.remove_tag(name)
-        t = self.app.ds.tasks.get(self.task.tid)
-        t.remove_tag(name)
-
 
     def show_popover_start(self, widget, event):
         """Open the start date calendar popup."""
@@ -687,22 +672,17 @@ class TaskEditor:
             datetoset = None
 
         if datetoset is not None:
-            # TODO: New Core
-            t = self.app.ds.tasks.get(self.task.tid)
 
             if date_kind == GTGCalendar.DATE_KIND_START:
                 self.task.set_start_date(datetoset)
-                t.date_start = datetoset
                 self.start_popover.popdown()
 
             elif date_kind == GTGCalendar.DATE_KIND_DUE:
                 self.task.set_due_date(datetoset)
-                t.date_due = datetoset
                 self.due_popover.popdown()
 
             elif date_kind == GTGCalendar.DATE_KIND_CLOSED:
                 self.task.set_closed_date(datetoset)
-                t.date_closed = datetoset
                 self.closed_popover.popdown()
 
             self.refresh_editor()
@@ -778,8 +758,6 @@ class TaskEditor:
 
     def dismiss(self):
         stat = self.task.get_status()
-        t = self.app.ds.tasks.get(self.task.tid)
-        t.toggle_dismissed()
 
         if stat == Task.STA_DISMISSED:
             self.task.set_status(Task.STA_ACTIVE)
@@ -791,8 +769,6 @@ class TaskEditor:
 
     def change_status(self):
         stat = self.task.get_status()
-        t = self.app.ds.tasks.get(self.task.tid)
-        t.toggle_active()
 
         if stat == Task.STA_DONE:
             self.task.set_status(Task.STA_ACTIVE)
@@ -803,9 +779,6 @@ class TaskEditor:
             self.close(None)
 
     def reopen(self):
-        t = self.app.ds.tasks.get(self.task.tid)
-        t.toggle_active()
-
         self.task.set_status(Task.STA_ACTIVE)
         self.refresh_editor()
 
@@ -820,16 +793,10 @@ class TaskEditor:
     def new_subtask(self, title=None, tid=None):
         if tid:
             self.task.add_child(tid)
-            self.app.ds.tasks.parent(self.task.tid, tid)
         elif title:
             subt = self.task.new_subtask()
             subt.set_title(title)
             tid = subt.get_id()
-
-            # TODO: New Core
-            t = self.app.ds.tasks.new(title, self.task.tid)
-            t.id = tid
-            self.app.ds.tasks.refresh_lookup_cache()
 
         return tid
 
@@ -837,14 +804,12 @@ class TaskEditor:
         """Remove a subtask of this task."""
 
         self.task.remove_child(tid)
-        self.app.ds.tasks.unparent(tid, self.task.tid)
 
     def rename_subtask(self, tid, new_title):
         """Rename a subtask of this task."""
 
         try:
             self.req.get_task(tid).set_title(new_title)
-            self.app.ds.tasks.get(tid).title = new_title
         except (AttributeError, KeyError):
             # There's no task at that tid
             pass
@@ -876,13 +841,6 @@ class TaskEditor:
             parent_id = parent.get_id()
 
             self.task.set_parent(parent_id)
-
-            # TODO: New Core, remove old code when stable
-            parent2 = Task2(title=_('New Task'), id=parent_id)
-            parent2.tags = self.app.ds.tasks.get(self.task.tid).tags
-            self.app.ds.tasks.add(parent2)
-            self.app.ds.tasks.parent(self.task.tid, parent2.id)
-
 
             self.app.open_task(parent_id)
             # Prevent WM issues and risks of conflicting content changes:
@@ -926,13 +884,6 @@ class TaskEditor:
         if self.config is not None:
             self.config.save()
         self.time = time.time()
-
-        # TODO: New core, remove previous code once stable
-        t = self.app.ds.tasks.get(self.task.tid)
-        t.title = self.textview.get_title()
-        t.contents = self.textview.get_text()
-        self.app.ds.save()
-
 
     # light_save save the task without refreshing every 30seconds
     # We will reduce the time when the get_text will be in another thread
@@ -990,7 +941,6 @@ class TaskEditor:
 
         if self.task.is_new():
             self.req.delete_task(tid)
-            self.app.ds.tasks.remove(tid)
         else:
             self.save()
             [sub.set_to_keep() for sub in self.task.get_subtasks() if sub]
