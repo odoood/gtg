@@ -18,10 +18,7 @@
 
 
 from gi.repository import Gtk
-from GTG.core.tasks2 import Filter
-
 from gettext import gettext as _, ngettext
-
 
 class DeleteTagsDialog():
 

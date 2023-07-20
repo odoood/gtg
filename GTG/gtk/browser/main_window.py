@@ -43,7 +43,6 @@ from GTG.gtk.browser.treeview_factory import TreeviewFactory
 from GTG.gtk.editor.calendar import GTGCalendar
 from GTG.gtk.tag_completion import TagCompletion
 from GTG.core.dates import Date
-from GTG.core.tasks2 import Filter
 from GTG.gtk.browser.adaptive_button import AdaptiveFittingWidget # Register type
 
 log = logging.getLogger(__name__)

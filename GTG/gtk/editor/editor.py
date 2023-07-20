@@ -41,7 +41,6 @@ from GTG.gtk.editor.recurring_menu import RecurringMenu
 from GTG.gtk.editor.taskview import TaskView
 from GTG.gtk.tag_completion import tag_filter
 from GTG.gtk.colors import rgb_to_hex
-from GTG.core.tasks2 import Task2
 
 """
 TODO (jakubbrindza): re-factor tag_filter into a separate module
