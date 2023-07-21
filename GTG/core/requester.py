@@ -23,11 +23,11 @@ A nice general purpose interface for the datastore and tagstore
 import threading
 import logging
 import uuid
+from collections import deque
 
 from GTG.backends.backend_signals import BackendSignals
 from GTG.backends.generic_backend import GenericBackend
 from GTG.core.config import CoreConfig
-from GTG.core.tasksource import TaskSource
 from GTG.core.search import parse_search_query, search_filter, InvalidQuery
 from GTG.core.tag import Tag, SEARCH_TAG, SEARCH_TAG_PREFIX
 from GTG.core.task import Task
@@ -75,6 +75,22 @@ class Requester(GObject.GObject):
         self._backend_signals.connect('default-backend-loaded',
                                       self._activate_non_default_backends)
         self._backend_mutex = threading.Lock()
+
+        self.add_task_handle = None
+        self.set_task_handle = None
+        self.remove_task_handle = None
+
+        self.tasktree = self.get_main_view()
+
+        self.to_set = deque()
+        self.to_remove = deque()
+
+        self.to_set_timer = None
+
+        if log.isEnabledFor(logging.DEBUG):
+            self.timer_timestep = 5
+        else:
+            self.timer_timestep = 1
 
     def _activate_non_default_backends(self, sender=None):
         """
@@ -514,7 +530,7 @@ class Requester(GObject.GObject):
 
         @param disabled: If disabled is True, attaches also the list of
                 disabled backends
-        @return list: a list of TaskSource objects
+        @return list: a list of backend objects
         """
         result = []
         for backend in self.backends.values():
@@ -527,8 +543,7 @@ class Requester(GObject.GObject):
         Returns a backend given its id.
 
         @param backend_id: a backend id
-        @returns GTG.core.datastore.TaskSource or None: the requested backend,
-                                                        or None
+        @returns the requested backend or None
         """
         if backend_id in self.backends:
             return self.backends[backend_id]
@@ -537,7 +552,7 @@ class Requester(GObject.GObject):
 
     def register_backend(self, backend_dic):
         """
-        Registers a TaskSource as a backend for this datastore
+        Registers a backend for this datastore
 
         @param backend_dic: Dictionary object containing all the
                             parameters to initialize the backend
@@ -556,36 +571,45 @@ class Requester(GObject.GObject):
             if backend.get_id() in self.backends:
                 log.error("registering already registered backend")
                 return None
-            # creating the TaskSource which will wrap the backend,
-            # filtering the tasks that should hit the backend.
-            source = TaskSource(requester=self,
-                                backend=backend,
-                                datastore=self)
 
             if first_run:
                 backend.this_is_the_first_run(None)
 
-            self.backends[backend.get_id()] = source
+            self.backends[backend.get_id()] = backend
+
+            # XXX: ONLY 1 BACKEND
+            self.backend = backend
+            self.backend.register_datastore(self)
+
             # we notify that a new backend is present
             self._backend_signals.backend_added(backend.get_id())
-            # saving the backend in the correct dictionary (backends for
-            # enabled backends, disabled_backends for the disabled ones)
-            # this is useful for retro-compatibility
-            if GenericBackend.KEY_ENABLED not in backend_dic:
-                source.set_parameter(GenericBackend.KEY_ENABLED, True)
-            if GenericBackend.KEY_DEFAULT_BACKEND not in backend_dic:
-                source.set_parameter(GenericBackend.KEY_DEFAULT_BACKEND, True)
-            # if it's enabled, we initialize it
-            if source.is_enabled() and \
-                    (self.is_default_backend_loaded or source.is_default()):
-                source.initialize(connect_signals=False)
+            if backend.is_enabled() and \
+                    (self.is_default_backend_loaded or backend.is_default()):
+                self.backend.initialize()
+
                 # Filling the backend
                 # Doing this at start is more efficient than
                 # after the GUI is launched
-                source.start_get_tasks()
-            return source
+                backend.start_get_tasks()
+                self._connect_signals()
+                if backend.is_default():
+                    self._backend_signals.default_backend_loaded()
         else:
             log.error("Tried to register a backend without a pid")
+
+    def _connect_signals(self):
+        """
+        Helper function to connect signals
+        """
+        if not self.add_task_handle:
+            self.add_task_handle = self.tasktree.register_cllbck(
+                'node-added', self.queue_set_task)
+        if not self.set_task_handle:
+            self.set_task_handle = self.tasktree.register_cllbck(
+                'node-modified', self.queue_set_task)
+        if not self.remove_task_handle:
+            self.remove_task_handle = self.tasktree.register_cllbck(
+                'node-deleted', self.queue_remove_task)
 
     def _backend_startup(self, backend):
         """
@@ -608,6 +632,87 @@ class Requester(GObject.GObject):
                                   args=(self, backend))
         thread.setDaemon(True)
         thread.start()
+
+    def __try_launch_setting_thread(self):
+        """
+        Helper function to launch the setting thread, if it's not running
+        """
+        if self.to_set_timer is None and not self.please_quit:
+            self.to_set_timer = threading.Timer(self.timer_timestep,
+                                                self.launch_setting_thread)
+            self.to_set_timer.setDaemon(True)
+            self.to_set_timer.start()
+
+    def launch_setting_thread(self, bypass_please_quit=False):
+        """
+        Operates the threads to set and remove tasks.
+        Releases the lock when it is done.
+
+        @param bypass_please_quit: if True, the self.please_quit
+                                   "quit condition" is ignored. Currently,
+                                   it's turned to true after the quit
+                                   condition has been issued, to execute
+                                   eventual pending operations.
+        """
+        while not self.please_quit or bypass_please_quit:
+            try:
+                tid = self.to_set.pop()
+            except IndexError:
+                break
+            # we check that the task is not already marked for deletion
+            # and that it's still to be stored in this backend
+            # NOTE: no need to lock, we're reading
+            if tid not in self.to_remove and \
+                    self.should_task_id_be_stored(tid) and \
+                    self.has_task(tid):
+                task = self.get_task(tid)
+                self.backend.queue_set_task(task)
+        while not self.please_quit or bypass_please_quit:
+            try:
+                tid = self.to_remove.pop()
+            except IndexError:
+                break
+            self.backend.queue_remove_task(tid)
+        # we release the weak lock
+        self.to_set_timer = None
+
+    def should_task_id_be_stored(self, task_id):
+        """
+        Helper function:  Checks if a task should be stored in this backend
+
+        @param task_id: a task id
+        @returns bool: True if the task should be stored
+        """
+        # FIXME: it will be a lot easier to add, instead,
+        # a filter to a tree and check that this task is well in the tree
+        #return self.task_filter(task)
+        return True
+
+    def queue_set_task(self, tid, path=None):
+        """
+        Updates the task in the datastore.  Actually, it adds the task to a
+        queue to be updated asynchronously.
+
+        @param task: The Task object to be updated.
+        @param path: its path in TreeView widget => not used there
+        """
+        if self.should_task_id_be_stored(tid):
+            if tid not in self.to_set and tid not in self.to_remove:
+                self.to_set.appendleft(tid)
+                self.__try_launch_setting_thread()
+        else:
+            self.queue_remove_task(tid, path)
+
+    def queue_remove_task(self, tid, path=None):
+        """
+        Queues task to be removed.
+
+        @param sender: not used, any value will do
+        @param tid: The Task ID of the task to be removed
+        """
+        if tid not in self.to_remove:
+            self.to_remove.appendleft(tid)
+            self.__try_launch_setting_thread()
 
     def set_backend_enabled(self, backend_id, state):
         """
