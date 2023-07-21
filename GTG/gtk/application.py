@@ -40,7 +40,6 @@ from GTG.backends import BackendFactory
 from GTG.core import requester
 from GTG.core.dirs import CSS_DIR
 from GTG.core.dates import Date
-from GTG.gtk.backends import BackendsDialog
 from GTG.gtk.browser.tag_editor import TagEditor
 from GTG.core.timer import Timer
 from GTG.gtk.errorhandler import do_error_dialog
@@ -77,7 +76,6 @@ class Application(Gtk.Application):
     # Dialogs
     preferences_dialog = None
     plugins_dialog = None
-    backends_dialog = None
     delete_task_dialog = None
     edit_tag_dialog = None
 
@@ -298,7 +296,6 @@ class Application(Gtk.Application):
             ('mark_as_done', self.mark_as_done, ('app.mark_as_done', ['<ctrl>D'])),
             ('dismiss', self.dismiss, ('app.dismiss', ['<ctrl><shift>D'])),
             ('reopen', self.reopen, ('app.reopen', ['<ctrl>O'])),
-            ('open_backends', self.open_backends_manager, None),
             ('open_help', self.open_help, ('app.open_help', ['F1'])),
             ('open_preferences', self.open_preferences, ('app.open_preferences', ['<ctrl>comma'])),
             ('close', self.close_context, ('app.close', ['Escape'])),
@@ -383,11 +380,6 @@ class Application(Gtk.Application):
             Gtk.show_uri(None, "help:gtg", Gdk.CURRENT_TIME)
         except GLib.Error:
             log.error('Could not open help')
-
-    def open_backends_manager(self, action, param):
-        """Callback to open the backends manager dialog."""
-
-        self.open_edit_backends()
 
     def open_preferences(self, action, param):
         """Callback to open the preferences dialog."""
@@ -481,18 +473,6 @@ class Application(Gtk.Application):
     # --------------------------------------------------------------------------
     # TASK BROWSER API
     # --------------------------------------------------------------------------
-
-    def open_edit_backends(self, sender=None, backend_id=None):
-        """Open the backends dialog."""
-
-        self.backends_dialog = BackendsDialog(self.req)
-        self.backends_dialog.dialog.insert_action_group('app', self)
-
-        self.backends_dialog.activate()
-
-        if backend_id:
-            self.backends_dialog.show_config_for_backend(backend_id)
-
     def delete_tasks(self, tids, window):
         """Present the delete task confirmation dialog."""
 
