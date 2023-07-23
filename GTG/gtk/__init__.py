@@ -26,4 +26,3 @@ class ViewConfig():
     data = os.path.join(current_rep, 'data')
     DELETE_UI_FILE = os.path.join(data, "deletion.ui")
     PLUGINS_UI_FILE = os.path.join(data, "plugins.ui")
-    BACKENDS_UI_FILE = os.path.join(data, "backends.ui")
