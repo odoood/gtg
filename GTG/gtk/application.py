@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # Getting Things GNOME! - a personal organizer for the GNOME desktop
+# Copyright (c) 2023 - odoood
 # Copyright (c) 2008-2015 - Lionel Dricot & Bertrand Rousseau
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -24,7 +25,7 @@ import os
 import sys
 import logging
 import urllib.parse  # GLibs URI functions not available for some reason
-
+import uuid
 
 from GTG.core.dirs import DATA_DIR
 from GTG.gtk.browser.delete_task import DeletionUI
@@ -36,7 +37,9 @@ from GTG.gtk.plugins import PluginsDialog
 from GTG.core import clipboard
 from GTG.core.plugins.engine import PluginEngine
 from GTG.core.plugins.api import PluginAPI
-from GTG.backends import BackendFactory
+from GTG.core.config import CoreConfig
+from GTG.backends.backend_localfile import Backend
+from GTG.backends.generic_backend import GenericBackend
 from GTG.core import requester
 from GTG.core.dirs import CSS_DIR
 from GTG.core.dates import Date
@@ -108,11 +111,63 @@ class Application(Gtk.Application):
             # Load default file
             data_file = os.path.join(DATA_DIR, 'gtg_data.xml')
 
-            # Register backends
+            # Register backend
             self.req = requester.Requester()
 
-            for backend_dic in BackendFactory().get_saved_backends_list():
-                self.req.register_backend(backend_dic)
+            config = CoreConfig()
+            backends = config.get_all_backends()
+            backend_data = None
+
+            # If no backend available, we create a new using localfile. Dic
+            # will be filled in by the backend
+            if not backends:
+
+                backend_data = {'first_run': True}
+
+                # Different pids are necessary to discern between backends of
+                # the same type
+                parameters = Backend.get_static_parameters()
+
+                for param_name, param_dic in parameters.items():
+                    backend_data[param_name] = \
+                        param_dic[GenericBackend.PARAM_DEFAULT_VALUE]
+
+                backend_data["pid"] = str(uuid.uuid4())
+                backend_data["module"] = Backend.get_name()
+
+                backend_data["backend"] = Backend(backend_data)
+                backend_data["first_run"] = True
+
+            else:
+
+                backend_data = {}
+
+                backend = backends[0]
+                settings = config.get_backend_config(backend)
+
+                backend_data['pid'] = str(settings.get('pid'))
+                backend_data["first_run"] = False
+
+                specs = Backend.get_static_parameters()
+
+                for param_name, param_dic in specs.items():
+
+                    try:
+                        # We need to convert the parameter to the right format.
+                        # We fetch the format from the static_parameters
+                        param_type = param_dic[GenericBackend.PARAM_TYPE]
+                        param_value = GenericBackend.cast_param_type_from_string(
+                            settings.get(param_name), param_type)
+
+                        backend_data[param_name] = param_value
+
+                    except ValueError:
+                        # Parameter not found in config
+                        pass
+
+                backend_data['backend'] = Backend(backend_data)
+
+            self.req.register_backend(backend_data)
 
             # Save the backends directly to be sure projects.xml is written
             self.req.save(quit=False)
@@ -627,7 +682,7 @@ class Application(Gtk.Application):
         self.save_plugin_settings()
 
         if self.req is not None:
-            # Save data and shutdown datastore backends
+            # Save data and shutdown datastore backend
             self.req.save_datastore(quit=True)
 
         Gtk.Application.do_shutdown(self)
