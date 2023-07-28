@@ -72,8 +72,6 @@ class Requester(GObject.GObject):
         # The default backend must be loaded first. This flag turns to True
         # when the default backend loading has finished.
         self.is_default_backend_loaded = False
-        self._backend_signals.connect('default-backend-loaded',
-                                      self._activate_non_default_backends)
         self._backend_mutex = threading.Lock()
 
         self.add_task_handle = None
@@ -91,23 +89,6 @@ class Requester(GObject.GObject):
             self.timer_timestep = 5
         else:
             self.timer_timestep = 1
-
-    def _activate_non_default_backends(self, sender=None):
-        """
-        Non-default backends have to wait until the default loads before
-        being  activated. This function is called after the first default
-        backend has loaded all its tasks.
-
-        @param sender: not used, just here for signal compatibility
-        """
-        if self.is_default_backend_loaded:
-            log.debug("spurious call")
-            return
-
-        self.is_default_backend_loaded = True
-        for backend in self.backends.values():
-            if backend.is_enabled() and not backend.is_default():
-                self._backend_startup(backend)
 
     def _add_new_tag(self, name, tag, filter_func, parameters, parent_id=None):
         """ Add tag into a tree """
@@ -230,23 +211,6 @@ class Requester(GObject.GObject):
 
         return SEARCH_TAG_PREFIX + name
 
-    def get_used_tags(self):
-        """Return tags currently used by a task.
-
-        @return: A list of tag names used by a task.
-        """
-        tagstore = self._tagstore
-        view = tagstore.get_viewtree(name='tag_completion', refresh=False)
-        tags = view.get_all_nodes()
-        tags.sort(key=str.lower)
-        return tags
-
-    def get_all_tags(self):
-        """
-        Gets all tags from all tasks
-        """
-        return self._tagstore.get_main_view().get_all_nodes()
-
     def delete_tag(self, tagname):
         my_tag = self.get_tag(tagname)
         for task_id in my_tag.get_related_tasks():
@@ -266,27 +230,6 @@ class Requester(GObject.GObject):
     def get_task_config(self, task_id):
         """ Returns configuration object for task """
         return self._config.get_task_config(task_id)
-
-    # Accessor to embedded objects in datastore ##############################
-    def get_tagstore(self):
-        """
-        Return the tagstore associated with this datastore
-        """
-        return self._tagstore
-
-    def get_requester(self):
-        """
-        Returns itself.
-        """
-        return self
-
-    def get_raw_tasks_tree(self):
-        """
-        Return the Tree with all the tasks contained in this Datastore
-
-        @returns GTG.core.tree.Tree: a task tree (the main one)
-        """
-        return self._tasks
 
     # Tags functions ##########################################################
     def new_tag(self, name, attributes={}, tid=None):
@@ -538,18 +481,6 @@ class Requester(GObject.GObject):
                 result.append(backend)
         return result
 
-    def get_backend(self, backend_id):
-        """
-        Returns a backend given its id.
-
-        @param backend_id: a backend id
-        @returns the requested backend or None
-        """
-        if backend_id in self.backends:
-            return self.backends[backend_id]
-        else:
-            return None
-
     def register_backend(self, backend_dic):
         """
         Registers a backend for this datastore
@@ -610,28 +541,6 @@ class Requester(GObject.GObject):
         if not self.remove_task_handle:
             self.remove_task_handle = self.tasktree.register_cllbck(
                 'node-deleted', self.queue_remove_task)
-
-    def _backend_startup(self, backend):
-        """
-        Helper function to launch a thread that starts a backend.
-
-        @param backend: the backend object
-        """
-
-        def __backend_startup(self, backend):
-            """
-            Helper function to start a backend
-
-            @param backend: the backend object
-            """
-            backend.initialize()
-            backend.start_get_tasks()
-            self.flush_all_tasks(backend.get_id())
-
-        thread = threading.Thread(target=__backend_startup,
-                                  args=(self, backend))
-        thread.setDaemon(True)
-        thread.start()
 
     def __try_launch_setting_thread(self):
         """
@@ -714,67 +623,6 @@ class Requester(GObject.GObject):
             self.to_remove.appendleft(tid)
             self.__try_launch_setting_thread()
 
-    def set_backend_enabled(self, backend_id, state):
-        """
-        The backend corresponding to backend_id is enabled or disabled
-        according to "state".
-        Disable:
-        Quits a backend and disables it (which means it won't be
-        automatically loaded next time GTG is started)
-        Enable:
-        Reloads a disabled backend. Backend must be already known by the
-        Datastore
-
-        @param backend_id: a backend id
-        @param state: True to enable, False to disable
-        """
-        if backend_id in self.backends:
-            backend = self.backends[backend_id]
-            current_state = backend.is_enabled()
-            if current_state is True and state is False:
-                # we disable the backend
-                # FIXME!!!
-                threading.Thread(target=backend.quit,
-                                 kwargs={'disable': True}).start()
-            elif current_state is False and state is True:
-                if self.is_default_backend_loaded is True:
-                    self._backend_startup(backend)
-                else:
-                    # will be activated afterwards
-                    backend.set_parameter(GenericBackend.KEY_ENABLED,
-                                          True)
-
-    def remove_backend(self, backend_id):
-        """
-        Removes a backend, and forgets it ever existed.
-
-        @param backend_id: a backend id
-        """
-        if backend_id in self.backends:
-            backend = self.backends[backend_id]
-            if backend.is_enabled():
-                self.set_backend_enabled(backend_id, False)
-            # FIXME: to keep things simple, backends are not notified that they
-            #       are completely removed (they think they're just
-            #       deactivated). We should add a "purge" call to backend to
-            #       let them know that they're removed, so that they can
-            #       remove all the various files they've created. (invernizzi)
-
-            # we notify that the backend has been deleted
-            self._backend_signals.backend_removed(backend.get_id())
-            del self.backends[backend_id]
-
-    def backend_change_attached_tags(self, backend_id, tag_names):
-        """
-        Changes the tags for which a backend should store a task
-
-        @param backend_id: a backend_id
-        @param tag_names: the new set of tags. This should not be a tag object,
-                          just the tag name.
-        """
-        backend = self.backends[backend_id]
-        backend.set_attached_tags(tag_names)
-
     def flush_all_tasks(self, backend_id):
         """
         This function will cause all tasks to be checked against the backend
@@ -848,22 +696,3 @@ class Requester(GObject.GObject):
 
         #  Saving the tagstore
         self.save_tagtree()
-
-    def request_task_deletion(self, tid):
-        """
-        This is a proxy function to request a task deletion from a backend
-
-        @param tid: the tid of the task to remove
-        """
-        self.delete_task(tid)
-
-    def get_backend_mutex(self):
-        """
-        Returns the mutex object used by backends to avoid modifying a task
-        at the same time.
-
-        @returns: threading.Lock
-        """
-        return self._backend_mutex
-
-
