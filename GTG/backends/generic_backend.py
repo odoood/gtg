@@ -125,18 +125,6 @@ class GenericBackend():
         """
         pass
 
-    def this_is_the_first_run(self, xml):
-        """
-        Optional, and almost surely not needed.
-        Called upon the very first GTG startup.
-        This function is needed only in the default backend (XML localfile,
-        currently).
-        The xml parameter is an object containing GTG default tasks.
-
-        @param xml: an xml object containing the default tasks.
-        """
-        pass
-
     def quit(self, disable=False):
         """
         Called when GTG quits or the user wants to disable the backend.
@@ -249,24 +237,6 @@ class GenericBackend():
                        TYPE_INT: int,
                        }
 
-    @classmethod
-    def _get_static_parameters(cls):
-        """
-        Helper method, used to obtain the full list of the static_parameters
-        (user configured and default ones)
-
-        @returns dict: the dict containing all the static parameters
-        """
-        temp_dic = cls._static_parameters_obligatory.copy()
-        if cls._general_description[cls.BACKEND_TYPE] == \
-                cls.TYPE_READWRITE:
-            for key, value in \
-                    cls._static_parameters_obligatory_for_rw.items():
-                temp_dic[key] = value
-        for key, value in cls._static_parameters.items():
-            temp_dic[key] = value
-        return temp_dic
-
     def __init__(self, parameters):
         """
         Instantiates a new backend. Please note that this is called also
@@ -302,35 +272,20 @@ class GenericBackend():
         self.to_set = deque()
         self.to_remove = deque()
 
-    def get_attached_tags(self):
-        """
-        Returns the list of tags which are handled by this backend
-        """
-        if hasattr(self._parameters, self.KEY_DEFAULT_BACKEND) and \
-                self._parameters[self.KEY_DEFAULT_BACKEND]:
-            # default backends should get all the tasks
-            # NOTE: this shouldn't be needed, but it doesn't cost anything and
-            #      it could avoid potential tasks losses.
-            return [ALLTASKS_TAG]
-        try:
-            return self._parameters[self.KEY_ATTACHED_TAGS]
-        except Exception:
-            return []
-
-    def set_attached_tags(self, tags):
-        """
-        Changes the set of attached tags
-
-        @param tags: the new attached_tags set
-        """
-        self._parameters[self.KEY_ATTACHED_TAGS] = tags
-
     @classmethod
     def get_static_parameters(cls):
         """
         Returns a dictionary of parameters necessary to create a backend.
         """
-        return cls._get_static_parameters()
+        temp_dic = cls._static_parameters_obligatory.copy()
+        if cls._general_description[cls.BACKEND_TYPE] == \
+                cls.TYPE_READWRITE:
+            for key, value in \
+                    cls._static_parameters_obligatory_for_rw.items():
+                temp_dic[key] = value
+        for key, value in cls._static_parameters.items():
+            temp_dic[key] = value
+        return temp_dic
 
     def get_parameters(self):
         """
@@ -338,54 +293,12 @@ class GenericBackend():
         """
         return self._parameters
 
-    def set_parameter(self, parameter, value):
-        """
-        Change a parameter for this backend
-
-        @param parameter: the parameter name
-        @param value: the new value
-        """
-        self._parameters[parameter] = value
-
     @classmethod
     def get_name(cls):
         """
         Returns the name of the backend as it should be displayed in the UI
         """
-        return cls._get_from_general_description(cls.BACKEND_NAME)
-
-    @classmethod
-    def get_icon(cls):
-        """
-        Returns the ison of the backend as it should be displayed in the UI
-        """
-        return cls._get_from_general_description(cls.BACKEND_ICON)
-
-    @classmethod
-    def get_description(cls):
-        """Returns a description of the backend"""
-        return cls._get_from_general_description(cls.BACKEND_DESCRIPTION)
-
-    @classmethod
-    def get_type(cls):
-        """Returns the backend type(readonly, r/w, import, export) """
-        return cls._get_from_general_description(cls.BACKEND_TYPE)
-
-    @classmethod
-    def get_authors(cls):
-        """
-        returns the backend author(s)
-        """
-        return cls._get_from_general_description(cls.BACKEND_AUTHORS)
-
-    @classmethod
-    def _get_from_general_description(cls, key):
-        """
-        Helper method to extract values from cls._general_description.
-
-        @param key: the key to extract
-        """
-        return cls._general_description[key]
+        return cls._general_description[cls.BACKEND_NAME]
 
     @classmethod
     def cast_param_type_from_string(cls, param_value, param_type):
@@ -448,39 +361,6 @@ class GenericBackend():
         """
         return self.get_name() + "@" + self._parameters["pid"]
 
-    @classmethod
-    def get_human_default_name(cls):
-        """
-        returns the user friendly default backend name, without eventual user
-        modifications.
-
-        @returns string: the default "human name"
-        """
-        return cls._general_description[cls.BACKEND_HUMAN_NAME]
-
-    def get_human_name(self):
-        """
-        returns the user customized backend name. If the user hasn't
-        customized it, returns the default one.
-
-        @returns string: the "human name" of this backend
-        """
-        if self.KEY_HUMAN_NAME in self._parameters and \
-                self._parameters[self.KEY_HUMAN_NAME] != "":
-            return self._parameters[self.KEY_HUMAN_NAME]
-        else:
-            return self.get_human_default_name()
-
-    def set_human_name(self, name):
-        """
-        sets a custom name for the backend
-
-        @param name: the new name
-        """
-        self._parameters[self.KEY_HUMAN_NAME] = name
-        # we signal the change
-        self._signal_manager.backend_renamed(self.get_id())
-
     def is_enabled(self):
         """
         Returns if the backend is enabled
@@ -497,14 +377,6 @@ class GenericBackend():
         @returns: bool
         """
         return self.get_parameters()[GenericBackend.KEY_DEFAULT_BACKEND]
-
-    def is_initialized(self):
-        """
-        Returns if the backend is up and running
-
-        @returns: is_initialized
-        """
-        return self._is_initialized
 
     def get_parameter_type(self, param_name):
         """
@@ -528,102 +400,6 @@ class GenericBackend():
         @param datastore: a Datastore
         """
         self.datastore = datastore
-
-###############################################################################
-# HELPER FUNCTIONS ############################################################
-###############################################################################
-    def _store_pickled_file(self, path, data):
-        """
-        A helper function to save some object in a file.
-
-        @param path: a relative path. A good choice is
-        "backend_name/object_name"
-        @param data: the object
-        """
-        path = os.path.join(SYNC_DATA_DIR, path)
-        # mkdir -p
-        try:
-            os.makedirs(os.path.dirname(path))
-        except OSError as exception:
-            if exception.errno != errno.EEXIST:
-                raise
-
-        # Shift backups
-        for i in range(PICKLE_BACKUP_NBR, 1, -1):
-            destination = f"{path}.bak.{i:d}"
-            source = f"{path}.bak.{i - 1}"
-
-            if os.path.exists(destination):
-                os.unlink(destination)
-
-            if os.path.exists(source):
-                os.rename(source, destination)
-
-        # Backup main file
-        if PICKLE_BACKUP_NBR > 0:
-            destination = f"{path}.bak.1"
-            if os.path.exists(path):
-                os.rename(path, destination)
-
-        # saving
-        with open(path, 'wb') as file:
-            pickle.dump(data, file)
-
-    def _load_pickled_file(self, path, default_value=None):
-        """
-        A helper function to load some object from a file.
-
-        @param path: the relative path of the file
-        @param default_value: the value to return if the file is missing or
-        corrupt
-        @returns object: the needed object, or default_value
-        """
-        path = os.path.join(SYNC_DATA_DIR, path)
-        if not os.path.exists(path):
-            return default_value
-
-        with open(path, 'rb') as file:
-            try:
-                return pickle.load(file)
-            except Exception:
-                log.error("Pickle file for backend '%s' is damaged",
-                          self.get_name())
-
-        # Loading file failed, trying backups
-        for i in range(1, PICKLE_BACKUP_NBR + 1):
-            backup_file = f"{path}.bak.{i:d}"
-            if os.path.exists(backup_file):
-                with open(backup_file, 'rb') as file:
-                    try:
-                        data = pickle.load(file)
-                        log.info("Succesfully restored backup #%d for %r",
-                                 i, self.get_name())
-                        return data
-                    except Exception:
-                        log.error("Backup #%d for %r is damaged as well",
-                                  i, self.get_name())
-
-        # Data could not be loaded, degrade to default data
-        log.error("There is no suitable backup for %r, loading default data",
-                  self.get_name())
-        return default_value
-
-    def _gtg_task_is_syncable_per_attached_tags(self, task):
-        """
-        Helper function which checks if the given task satisfies the filtering
-        imposed by the tags attached to the backend.
-        That means, if a user wants a backend to sync only tasks tagged @works,
-        this function should be used to check if that is verified.
-
-        @returns bool: True if the task should be synced
-        """
-        attached_tags = self.get_attached_tags()
-        if ALLTASKS_TAG in attached_tags:
-            return True
-        for tag in task.get_tags_name():
-            if "@" + tag in attached_tags:
-                return True
-        return False
 
 ###############################################################################
 # THREADING ###################################################################
