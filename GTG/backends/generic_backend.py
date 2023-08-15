@@ -57,7 +57,6 @@ class GenericBackend():
     # General description of the backend: these parameters are used
     # to show a description of the backend to the user when s/he is
     # considering adding it.
-    # For an example, see the GTG/backends/backend_localfile.py file
     # _general_description has this format:
     # _general_description = {
     #    GenericBackend.BACKEND_NAME:       "backend_unique_identifier", \
@@ -92,7 +91,6 @@ class GenericBackend():
     # are a description of a parameter needed to configure the backend and
     # is identified in the outer dictionary by a key which is the name of the
     # parameter.
-    # For an example, see the GTG/backends/backend_localfile.py file
     # Each dictionary contains the keys:
     PARAM_DEFAULT_VALUE = "default_value"  # its default value
     PARAM_TYPE = "type"
@@ -172,7 +170,6 @@ class GenericBackend():
 
     # These are the parameters to configure a new backend of this type. A
     # parameter has a name, a type and a default value.
-    # For an example, see the GTG/backends/backend_localfile.py file
     # _static_parameters has this format:
     # _static_parameters = { \
     #    "param1_name": { \

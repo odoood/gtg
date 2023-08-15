@@ -38,7 +38,6 @@ from GTG.core import clipboard
 from GTG.core.plugins.engine import PluginEngine
 from GTG.core.plugins.api import PluginAPI
 from GTG.core.config import CoreConfig
-from GTG.backends.backend_localfile import Backend
 from GTG.backends.generic_backend import GenericBackend
 from GTG.core import requester
 from GTG.core.dirs import CSS_DIR
@@ -126,16 +125,16 @@ class Application(Gtk.Application):
 
                 # Different pids are necessary to discern between backends of
                 # the same type
-                parameters = Backend.get_static_parameters()
+                parameters = GenericBackend.get_static_parameters()
 
                 for param_name, param_dic in parameters.items():
                     backend_data[param_name] = \
                         param_dic[GenericBackend.PARAM_DEFAULT_VALUE]
 
                 backend_data["pid"] = str(uuid.uuid4())
-                backend_data["module"] = Backend.get_name()
+                backend_data["module"] = GenericBackend.get_name()
 
-                backend_data["backend"] = Backend(backend_data)
+                backend_data["backend"] = GenericBackend(backend_data)
                 backend_data["first_run"] = True
 
             else:
@@ -148,7 +147,7 @@ class Application(Gtk.Application):
                 backend_data['pid'] = str(settings.get('pid'))
                 backend_data["first_run"] = False
 
-                specs = Backend.get_static_parameters()
+                specs = GenericBackend.get_static_parameters()
 
                 for param_name, param_dic in specs.items():
 
@@ -165,7 +164,7 @@ class Application(Gtk.Application):
                         # Parameter not found in config
                         pass
 
-                backend_data['backend'] = Backend(backend_data)
+                backend_data['backend'] = GenericBackend(backend_data)
 
             self.req.register_backend(backend_data)
 
