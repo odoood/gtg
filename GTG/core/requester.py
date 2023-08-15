@@ -396,14 +396,6 @@ class Requester(GObject.GObject):
 
 
     # Tasks functions #########################################################
-    def get_all_tasks(self):
-        """
-        Returns list of all keys of active tasks
-
-        @return a list of strings: a list of task ids
-        """
-        return self._tasks.get_main_view().get_all_nodes()
-
     def has_task(self, tid):
         """
         Returns true if the tid is among the active or closed tasks for
@@ -622,28 +614,6 @@ class Requester(GObject.GObject):
         if tid not in self.to_remove:
             self.to_remove.appendleft(tid)
             self.__try_launch_setting_thread()
-
-    def flush_all_tasks(self, backend_id):
-        """
-        This function will cause all tasks to be checked against the backend
-        identified with backend_id. If tasks need to be added or removed, it
-        will be done here.
-        It has to be run after the creation of a new backend (or an alteration
-        of its "attached tags"), so that the tasks which are already loaded in
-        the Tree will be saved in the proper backends
-
-        @param backend_id: a backend id
-        """
-
-        def _internal_flush_all_tasks():
-            backend = self.backends[backend_id]
-            for task_id in self.get_all_tasks():
-                if self.please_quit:
-                    break
-                backend.queue_set_task(task_id)
-        t = threading.Thread(target=_internal_flush_all_tasks)
-        t.start()
-        self.backends[backend_id].start_get_tasks()
 
     def save(self, quit=False):
         """
