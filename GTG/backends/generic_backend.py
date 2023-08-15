@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # Getting Things GNOME! - a personal organizer for the GNOME desktop
+# Copyright (c) 2023 - odoood
 # Copyright (c) 2008-2013 - Lionel Dricot & Bertrand Rousseau
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -66,6 +67,88 @@ class GenericBackend():
     #    }
     # The complete list of constants and their meaning is given below.
     _general_description = {}
+
+    # BACKEND TYPE DESCRIPTION
+    # Each backend must have a "_general_description" attribute, which
+    # is a dictionary that holds the values for the following keys.
+
+    # the backend gtg internal name
+    # (doesn't change in translations, *must be unique*)
+    BACKEND_NAME = "name"
+    BACKEND_ICON = "icon"
+    BACKEND_HUMAN_NAME = "human-friendly-name"  # The name shown to the user
+    BACKEND_DESCRIPTION = "description"  # A short description of the backend
+    BACKEND_AUTHORS = "authors"  # a list of strings
+    BACKEND_TYPE = "type"
+    # BACKEND_TYPE is one of:
+    TYPE_READWRITE = "readwrite"
+    TYPE_READONLY = "readonly"
+    TYPE_IMPORT = "import"
+    TYPE_EXPORT = "export"
+
+    # "static_parameters" is a dictionary of dictionaries, each of which
+    # are a description of a parameter needed to configure the backend and
+    # is identified in the outer dictionary by a key which is the name of the
+    # parameter.
+    # For an example, see the GTG/backends/backend_localfile.py file
+    # Each dictionary contains the keys:
+    PARAM_DEFAULT_VALUE = "default_value"  # its default value
+    PARAM_TYPE = "type"
+    # PARAM_TYPE is one of the following (changing this changes the way
+    # the user can configure the parameter)
+    # the real password is stored in the GNOME keyring
+    # This is just a key to find it there
+    TYPE_PASSWORD = "password"
+    TYPE_STRING = "string"  # generic string, nothing fancy is done
+    TYPE_INT = "int"  # edit box can contain only integers
+    TYPE_BOOL = "bool"  # checkbox is shown
+    # list of strings. the "," character is prohibited in strings
+    TYPE_LIST_OF_STRINGS = "liststring"
+
+    # These parameters are common to all backends and necessary.
+    # They will be added automatically to your _static_parameters list
+    # NOTE: for now I'm disabling changing the default backend. Once it's all
+    #      set up, we will see about that (invernizzi)
+    KEY_DEFAULT_BACKEND = "Default"
+    KEY_ENABLED = "enabled"
+    KEY_HUMAN_NAME = BACKEND_HUMAN_NAME
+    KEY_ATTACHED_TAGS = "attached-tags"
+    KEY_USER = "user"
+    KEY_PID = "pid"
+
+    _static_parameters_obligatory = {
+        KEY_DEFAULT_BACKEND: {
+            PARAM_TYPE: TYPE_BOOL,
+            PARAM_DEFAULT_VALUE: False,
+        },
+        KEY_HUMAN_NAME: {
+            PARAM_TYPE: TYPE_STRING,
+            PARAM_DEFAULT_VALUE: "",
+        },
+        KEY_USER: {
+            PARAM_TYPE: TYPE_STRING,
+            PARAM_DEFAULT_VALUE: "",
+        },
+        KEY_PID: {
+            PARAM_TYPE: TYPE_STRING,
+            PARAM_DEFAULT_VALUE: "",
+        },
+        KEY_ENABLED: {
+            PARAM_TYPE: TYPE_BOOL,
+            PARAM_DEFAULT_VALUE: False,
+        }}
+
+    _static_parameters_obligatory_for_rw = {
+        KEY_ATTACHED_TAGS: {
+            PARAM_TYPE: TYPE_LIST_OF_STRINGS,
+            PARAM_DEFAULT_VALUE: [ALLTASKS_TAG],
+        }}
+
+    # Handy dictionary used in type conversion (from string to type)
+    _type_converter = {TYPE_STRING: str,
+                       TYPE_INT: int,
+                       }
+
 
     # These are the parameters to configure a new backend of this type. A
     # parameter has a name, a type and a default value.
@@ -152,90 +235,6 @@ class GenericBackend():
 ###############################################################################
 # You don't need to reimplement the functions below this line #################
 ###############################################################################
-
-    ###########################################################################
-    # CONSTANTS ###############################################################
-    ###########################################################################
-    # BACKEND TYPE DESCRIPTION
-    # Each backend must have a "_general_description" attribute, which
-    # is a dictionary that holds the values for the following keys.
-
-    # the backend gtg internal name
-    # (doesn't change in translations, *must be unique*)
-    BACKEND_NAME = "name"
-    BACKEND_ICON = "icon"
-    BACKEND_HUMAN_NAME = "human-friendly-name"  # The name shown to the user
-    BACKEND_DESCRIPTION = "description"  # A short description of the backend
-    BACKEND_AUTHORS = "authors"  # a list of strings
-    BACKEND_TYPE = "type"
-    # BACKEND_TYPE is one of:
-    TYPE_READWRITE = "readwrite"
-    TYPE_READONLY = "readonly"
-    TYPE_IMPORT = "import"
-    TYPE_EXPORT = "export"
-
-    # "static_parameters" is a dictionary of dictionaries, each of which
-    # are a description of a parameter needed to configure the backend and
-    # is identified in the outer dictionary by a key which is the name of the
-    # parameter.
-    # For an example, see the GTG/backends/backend_localfile.py file
-    # Each dictionary contains the keys:
-    PARAM_DEFAULT_VALUE = "default_value"  # its default value
-    PARAM_TYPE = "type"
-    # PARAM_TYPE is one of the following (changing this changes the way
-    # the user can configure the parameter)
-    # the real password is stored in the GNOME keyring
-    # This is just a key to find it there
-    TYPE_PASSWORD = "password"
-    TYPE_STRING = "string"  # generic string, nothing fancy is done
-    TYPE_INT = "int"  # edit box can contain only integers
-    TYPE_BOOL = "bool"  # checkbox is shown
-    # list of strings. the "," character is prohibited in strings
-    TYPE_LIST_OF_STRINGS = "liststring"
-
-    # These parameters are common to all backends and necessary.
-    # They will be added automatically to your _static_parameters list
-    # NOTE: for now I'm disabling changing the default backend. Once it's all
-    #      set up, we will see about that (invernizzi)
-    KEY_DEFAULT_BACKEND = "Default"
-    KEY_ENABLED = "enabled"
-    KEY_HUMAN_NAME = BACKEND_HUMAN_NAME
-    KEY_ATTACHED_TAGS = "attached-tags"
-    KEY_USER = "user"
-    KEY_PID = "pid"
-
-    _static_parameters_obligatory = {
-        KEY_DEFAULT_BACKEND: {
-            PARAM_TYPE: TYPE_BOOL,
-            PARAM_DEFAULT_VALUE: False,
-        },
-        KEY_HUMAN_NAME: {
-            PARAM_TYPE: TYPE_STRING,
-            PARAM_DEFAULT_VALUE: "",
-        },
-        KEY_USER: {
-            PARAM_TYPE: TYPE_STRING,
-            PARAM_DEFAULT_VALUE: "",
-        },
-        KEY_PID: {
-            PARAM_TYPE: TYPE_STRING,
-            PARAM_DEFAULT_VALUE: "",
-        },
-        KEY_ENABLED: {
-            PARAM_TYPE: TYPE_BOOL,
-            PARAM_DEFAULT_VALUE: False,
-        }}
-
-    _static_parameters_obligatory_for_rw = {
-        KEY_ATTACHED_TAGS: {
-            PARAM_TYPE: TYPE_LIST_OF_STRINGS,
-            PARAM_DEFAULT_VALUE: [ALLTASKS_TAG],
-        }}
-
-    # Handy dictionary used in type conversion (from string to type)
-    _type_converter = {TYPE_STRING: str,
-                       TYPE_INT: int,
-                       }
 
     def __init__(self, parameters):
         """
