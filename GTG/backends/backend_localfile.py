@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # Getting Things GNOME! - a personal organizer for the GNOME desktop
+# Copyright (c) 2023 - odoood
 # Copyright (c) 2008-2013 - Lionel Dricot & Bertrand Rousseau
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -308,43 +309,3 @@ class Backend(GenericBackend):
             already_saved.append(tagname)
 
         xml.save_file(self.get_path(), self.data_tree)
-
-    def used_backup(self):
-        """ This functions return a boolean value telling if backup files
-        were used when instantiating Backend class.
-        """
-        return xml.backup_used is not None
-
-    def backup_file_info(self):
-        """This functions returns status of the attempt to recover
-        gtg_tasks.xml
-        """
-
-        back = xml.backup_used
-
-        if not back:
-            return
-
-        elif back['filepath']:
-            return f"Recovered from backup made on: {back['time']}"
-
-        else:
-            return 'No backups found. Created a new file'
-
-
-    def notify_user_about_backup(self) -> None:
-        """ This function causes the inforbar to show up with the message
-        about file recovery.
-        """
-        message = _(
-            'Oops, something unexpected happened! '
-            'GTG tried to recover your tasks from backups. \n'
-        ) + self.backup_file_info()
-
-        BackendSignals().interaction_requested(
-            self.get_id(), message,
-            BackendSignals().INTERACTION_INFORM, 'on_continue_clicked')
-
-    def on_continue_clicked(self, *args) -> None:
-        """ Callback when the user clicks continue in the infobar."""
-        pass
