@@ -212,7 +212,7 @@ class GenericBackend():
         if not os.path.isfile(filepath):
             root = firstrun_tasks.generate()
             self._create_dirs(self.get_path())
-            xml.save_file(self.get_path(), root)
+            self._save_file(self.get_path(), root)
 
         self.data_tree = xml.open_file(filepath, 'gtgData')
         self.task_tree = self.data_tree.find('tasklist')
@@ -223,7 +223,7 @@ class GenericBackend():
         self.datastore.load_search_tree(self.search_tree)
 
         # Make safety daily backup after loading
-        xml.save_file(self.get_path(), self.data_tree)
+        self._save_file(self.get_path(), self.data_tree)
         self._write_backups(self.get_path())
 
 
@@ -305,6 +305,24 @@ class GenericBackend():
         if not os.path.exists(daily_backup):
             shutil.copy(filepath, daily_backup)
 
+    def _save_file(self, filepath: str, root: et.ElementTree) -> None:
+        """Save an XML file."""
+
+        temp_file = filepath + '__'
+
+        if os.path.exists(filepath):
+            os.rename(filepath, temp_file)
+
+        try:
+            with open(filepath, 'wb') as stream:
+                root.write(stream, xml_declaration=True, pretty_print=True,
+                           encoding='UTF-8')
+
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+
+        except (IOError, FileNotFoundError):
+            log.error('Could not write XML file at %r', filepath)
 
 ###############################################################################
 # You don't need to reimplement the functions below this line #################
@@ -602,7 +620,6 @@ class GenericBackend():
         self.data_tree = xml.open_file(self.get_path(), 'gtgData')
         self.task_tree = self.data_tree.find('tasklist')
         self.tag_tree = self.data_tree.find('taglist')
-        xml.backup_used = None
 
 
     def do_first_run_versioning(self, filepath: str) -> None:
@@ -611,12 +628,12 @@ class GenericBackend():
         if old_path is not None:
             log.warning('Found old file: %r. Running versioning code.', old_path)
             tree = versioning.convert(old_path, self.datastore)
-            xml.save_file(filepath, tree)
+            self._save_file(filepath, tree)
             os.rename(old_path, old_path + '.imported')
         else:
             root = firstrun_tasks.generate()
             self._create_dirs(self.get_path())
-            xml.save_file(self.get_path(), root)
+            self._save_file(self.get_path(), root)
 
 
     def find_old_path(self, datadir: str) -> str:
@@ -682,7 +699,7 @@ class GenericBackend():
             self.task_tree.append(element)
 
         # Write the xml
-        xml.save_file(self.get_path(), self.data_tree)
+        self._save_file(self.get_path(), self.data_tree)
 
     def remove_task(self, tid: str) -> None:
         """ This function is called from GTG core whenever a task must be
@@ -695,7 +712,7 @@ class GenericBackend():
 
         if element:
             element[0].getparent().remove(element[0])
-            xml.save_file(self.get_path(), self.data_tree)
+            self._save_file(self.get_path(), self.data_tree)
 
     def save_tags(self, tagnames, tagstore) -> None:
         """Save changes to tags and saved searches."""
@@ -753,4 +770,4 @@ class GenericBackend():
 
             already_saved.append(tagname)
 
-        xml.save_file(self.get_path(), self.data_tree)
+        self._save_file(self.get_path(), self.data_tree)
