@@ -206,7 +206,7 @@ class GenericBackend():
 
         if not os.path.isfile(filepath):
             root = firstrun_tasks.generate()
-            xml.create_dirs(self.get_path())
+            self._create_dirs(self.get_path())
             xml.save_file(self.get_path(), root)
 
         self.data_tree = xml.open_file(filepath, 'gtgData')
@@ -245,6 +245,16 @@ class GenericBackend():
         Useful to ensure that the state is saved in a consistent manner
         """
         pass
+
+    def _create_dirs(self, filepath: str) -> None:
+        """Create directory tree for filepath."""
+
+        base_dir = os.path.dirname(filepath)
+        try:
+            os.makedirs(base_dir, exist_ok=True)
+        except IOError as error:
+            log.error("Error while creating directories: %r", error)
+
 
 ###############################################################################
 # You don't need to reimplement the functions below this line #################
@@ -555,7 +565,7 @@ class GenericBackend():
             os.rename(old_path, old_path + '.imported')
         else:
             root = firstrun_tasks.generate()
-            xml.create_dirs(self.get_path())
+            self._create_dirs(self.get_path())
             xml.save_file(self.get_path(), root)
 
 
