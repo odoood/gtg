@@ -37,7 +37,6 @@ from GTG.core.keyring import Keyring
 from GTG.core.dirs import DATA_DIR
 from GTG.core import xml
 from GTG.core import firstrun_tasks
-from GTG.core import versioning
 from lxml import etree as et
 from gettext import gettext as _
 
@@ -210,9 +209,7 @@ class GenericBackend():
         filepath = self.get_path()
 
         if not os.path.isfile(filepath):
-            root = firstrun_tasks.generate()
-            self._create_dirs(self.get_path())
-            self._save_file(self.get_path(), root)
+            self.do_first_run_versioning()
 
         self.data_tree = xml.open_file(filepath, 'gtgData')
         self.task_tree = self.data_tree.find('tasklist')
@@ -624,16 +621,9 @@ class GenericBackend():
 
     def do_first_run_versioning(self, filepath: str) -> None:
         """If there is an old file around needing versioning, convert it, then rename the old file."""
-        old_path = self.find_old_path(DATA_DIR)
-        if old_path is not None:
-            log.warning('Found old file: %r. Running versioning code.', old_path)
-            tree = versioning.convert(old_path, self.datastore)
-            self._save_file(filepath, tree)
-            os.rename(old_path, old_path + '.imported')
-        else:
-            root = firstrun_tasks.generate()
-            self._create_dirs(self.get_path())
-            self._save_file(self.get_path(), root)
+        root = firstrun_tasks.generate()
+        self._create_dirs(self.get_path())
+        self._save_file(self.get_path(), root)
 
 
     def find_old_path(self, datadir: str) -> str:
