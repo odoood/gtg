@@ -24,7 +24,9 @@ the GenericBackend class
 
 from collections import deque
 from functools import reduce
+from datetime import datetime
 import os
+import shutil
 import threading
 import logging
 
@@ -40,6 +42,9 @@ from lxml import etree as et
 from gettext import gettext as _
 
 log = logging.getLogger(__name__)
+
+# Total amount of backups
+BACKUPS = 7
 
 class GenericBackend():
     """
@@ -219,7 +224,7 @@ class GenericBackend():
 
         # Make safety daily backup after loading
         xml.save_file(self.get_path(), self.data_tree)
-        xml.write_backups(self.get_path())
+        self._write_backups(self.get_path())
 
 
     def quit(self, disable=False):
@@ -254,6 +259,51 @@ class GenericBackend():
             os.makedirs(base_dir, exist_ok=True)
         except IOError as error:
             log.error("Error while creating directories: %r", error)
+
+    def _get_backup_name(self, filepath: str, i: int) -> str:
+        """Get name of backups which are backup/ directory."""
+
+        dirname, filename = os.path.split(filepath)
+        backup_file = f"{filename}.bak.{i}" if i else filename
+
+        return os.path.join(dirname, 'backup', backup_file)
+
+    def _write_backups(self, filepath: str) -> None:
+        """Make backups for the file at filepath."""
+
+        current_back = BACKUPS
+        backup_name = self._get_backup_name(filepath, None)
+        backup_dir = os.path.dirname(backup_name)
+
+        # Make sure backup dir exists
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+
+        except IOError:
+            log.error('Backup dir %r cannot be created!', backup_dir)
+            return
+
+        # Cycle backups
+        while current_back > 0:
+            older = f"{backup_name}.bak.{current_back}"
+            newer = f"{backup_name}.bak.{current_back - 1}"
+
+            if os.path.exists(newer):
+                shutil.move(newer, older)
+
+            current_back -= 1
+
+        # bak.0 is always a fresh copy of the closed file
+        # so that it's not touched in case of not opening next time
+        bak_0 = f"{backup_name}.bak.0"
+        shutil.copy(filepath, bak_0)
+
+        # Add daily backup
+        today = datetime.today().strftime('%Y-%m-%d')
+        daily_backup = f'{backup_name}.{today}.bak'
+
+        if not os.path.exists(daily_backup):
+            shutil.copy(filepath, daily_backup)
 
 
 ###############################################################################
