@@ -217,7 +217,7 @@ class GenericBackend():
         self.search_tree = self.data_tree.find('searchlist')
 
         self.load_tag_tree(self.tag_tree)
-        self.datastore.load_search_tree(self.search_tree)
+        self.load_search_tree(self.search_tree)
 
         # Make safety daily backup after loading
         self._save_file(self.get_path(), self.data_tree)
@@ -253,6 +253,26 @@ class GenericBackend():
                 tag.set_parent(parent)
 
         self.datastore.tagfile_loaded = True
+
+    def load_search_tree(self, search_tree):
+        """Load saved searches tree from xml"""
+
+        for element in search_tree.iter('savedSearch'):
+            tid = element.get('id')
+            name = element.get('name')
+            color = element.get('color')
+            icon = element.get('icon')
+            query = element.get('query')
+
+            tag_attrs = {}
+
+            if color:
+                tag_attrs['color'] = color
+
+            if icon:
+                tag_attrs['icon'] = icon
+
+            self.datastore._new_search_tag(name, query, tag_attrs, tid, False)
 
     def quit(self, disable=False):
         """

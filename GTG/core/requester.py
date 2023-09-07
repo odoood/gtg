@@ -322,27 +322,6 @@ class Requester(GObject.GObject):
         else:
             return None
 
-    def load_search_tree(self, search_tree):
-        """Load saved searches tree."""
-
-        for element in search_tree.iter('savedSearch'):
-            tid = element.get('id')
-            name = element.get('name')
-            color = element.get('color')
-            icon = element.get('icon')
-            query = element.get('query')
-
-            tag_attrs = {}
-
-            if color:
-                tag_attrs['color'] = color
-
-            if icon:
-                tag_attrs['icon'] = icon
-
-            self._new_search_tag(name, query, tag_attrs, tid, False)
-
-
     def get_tag_by_id(self, tid):
         """Get a tag by its ID"""
 
