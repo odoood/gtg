@@ -241,6 +241,10 @@ class Requester(GObject.GObject):
         parameters = {'tag': name}
         tag = Tag(name, req=self, attributes=attributes, tid=tid)
         self._add_new_tag(name, tag, self.treefactory.tag_filter, parameters)
+
+        # Add to idmap for quick lookup based on ID
+        self.tag_idmap[tid] = tag
+
         return tag
 
     def remove_tag(self, name):
@@ -317,41 +321,6 @@ class Requester(GObject.GObject):
             return self._tagstore.get_node(tagname)
         else:
             return None
-
-    def load_tag_tree(self, tag_tree):
-        """
-        Loads the tag tree from a xml file
-        """
-
-        for element in tag_tree.iter('tag'):
-            tid = element.get('id')
-            name = element.get('name')
-            color = element.get('color')
-            icon = element.get('icon')
-            parent = element.get('parent')
-            nonactionable = element.get('nonactionable')
-
-            tag_attrs = {}
-
-            if color:
-                tag_attrs['color'] = '#' + color
-
-            if icon:
-                tag_attrs['icon'] = icon
-
-            if nonactionable:
-                tag_attrs['nonactionable'] = nonactionable
-
-            tag = self.new_tag(name, tag_attrs, tid)
-
-            if parent:
-                tag.set_parent(parent)
-
-            # Add to idmap for quick lookup based on ID
-            self.tag_idmap[tid] = tag
-
-        self.tagfile_loaded = True
-
 
     def load_search_tree(self, search_tree):
         """Load saved searches tree."""
