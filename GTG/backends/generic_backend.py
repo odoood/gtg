@@ -240,14 +240,6 @@ class GenericBackend():
                 self._signal_manager.backend_sync_ended(self.get_id())
             threading.Thread(target=self.sync).run()
 
-    def save_state(self):
-        """
-        It's the last function executed on a quitting backend, after the
-        pending actions have been done.
-        Useful to ensure that the state is saved in a consistent manner
-        """
-        pass
-
     def _create_dirs(self, filepath: str) -> None:
         """Create directory tree for filepath."""
 
@@ -452,23 +444,6 @@ class GenericBackend():
         """
         return self.get_name() + "@" + self._parameters["pid"]
 
-    def is_enabled(self):
-        """
-        Returns if the backend is enabled
-
-        @returns: bool
-        """
-        return self.get_parameters()[GenericBackend.KEY_ENABLED] or \
-            self.is_default()
-
-    def is_default(self):
-        """
-        Returns if the backend is default
-
-        @returns: bool
-        """
-        return self.get_parameters()[GenericBackend.KEY_DEFAULT_BACKEND]
-
     def get_parameter_type(self, param_name):
         """
         Given the name of a parameter, returns its type. If the parameter is
@@ -499,7 +474,7 @@ class GenericBackend():
         """
         Helper function to launch the setting thread, if it's not running.
         """
-        if self.to_set_timer is None and self.is_enabled():
+        if self.to_set_timer is None:
             self.to_set_timer = threading.Timer(self.timer_timestep,
                                                 self.launch_setting_thread)
             self.to_set_timer.start()
@@ -576,7 +551,6 @@ class GenericBackend():
             except Exception:
                 pass
         self.launch_setting_thread(bypass_quit_request=True)
-        self.save_state()
 
     #---------------------------------------------------------------------------
     # XXX: COPIED FROM BACKEND LOCAL
@@ -608,7 +582,7 @@ class GenericBackend():
         """
 
         filepath = self.get_path()
-        self.do_first_run_versioning(filepath)
+        self.do_first_run_versioning()
 
 
         self._parameters[self.KEY_DEFAULT_BACKEND] = True
@@ -619,36 +593,11 @@ class GenericBackend():
         self.tag_tree = self.data_tree.find('taglist')
 
 
-    def do_first_run_versioning(self, filepath: str) -> None:
+    def do_first_run_versioning(self) -> None:
         """If there is an old file around needing versioning, convert it, then rename the old file."""
         root = firstrun_tasks.generate()
         self._create_dirs(self.get_path())
         self._save_file(self.get_path(), root)
-
-
-    def find_old_path(self, datadir: str) -> str:
-        """Reliably find the old data files."""
-        # used by which version?
-        path = os.path.join(datadir, 'gtg_tasks.xml')
-        if os.path.isfile(path):
-            return path
-        # used by (at least) 0.3.1-4
-        path = os.path.join(datadir, 'projects.xml')
-        if os.path.isfile(path):
-            return self.find_old_uuid_path(path)
-        return None
-
-
-    def find_old_uuid_path(self, path: str) -> str:
-        """Find the first backend entry with module='backend_localfile' and return its path."""
-        old_tree = xml.open_file(path, 'config')
-        for backend in old_tree.findall('backend'):
-            module = backend.get('module')
-            if module == 'backend_localfile':
-                uuid_path = backend.get('path')
-                if os.path.isfile(uuid_path):
-                    return uuid_path
-        return None
 
 
     def start_get_tasks(self) -> None:

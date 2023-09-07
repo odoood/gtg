@@ -469,8 +469,7 @@ class Requester(GObject.GObject):
         """
         result = []
         for backend in self.backends.values():
-            if backend.is_enabled() or disabled:
-                result.append(backend)
+            result.append(backend)
         return result
 
     def register_backend(self, backend_dic):
@@ -506,17 +505,14 @@ class Requester(GObject.GObject):
 
             # we notify that a new backend is present
             self._backend_signals.backend_added(backend.get_id())
-            if backend.is_enabled() and \
-                    (self.is_default_backend_loaded or backend.is_default()):
-                self.backend.initialize()
+            self.backend.initialize()
 
-                # Filling the backend
-                # Doing this at start is more efficient than
-                # after the GUI is launched
-                backend.start_get_tasks()
-                self._connect_signals()
-                if backend.is_default():
-                    self._backend_signals.default_backend_loaded()
+            # Filling the backend
+            # Doing this at start is more efficient than
+            # after the GUI is launched
+            backend.start_get_tasks()
+            self._connect_signals()
+            self._backend_signals.default_backend_loaded()
         else:
             log.error("Tried to register a backend without a pid")
 
