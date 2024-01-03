@@ -290,15 +290,6 @@ class GenericBackend():
                 self._signal_manager.backend_sync_ended(self.get_id())
             threading.Thread(target=self.sync).run()
 
-    def _create_dirs(self, filepath: str) -> None:
-        """Create directory tree for filepath."""
-
-        base_dir = os.path.dirname(filepath)
-        try:
-            os.makedirs(base_dir, exist_ok=True)
-        except IOError as error:
-            log.error("Error while creating directories: %r", error)
-
     def _get_backup_name(self, filepath: str, i: int) -> str:
         """Get name of backups which are backup/ directory."""
 
@@ -646,7 +637,14 @@ class GenericBackend():
     def do_first_run_versioning(self) -> None:
         """If there is an old file around needing versioning, convert it, then rename the old file."""
         root = firstrun_tasks.generate()
-        self._create_dirs(self.get_path())
+
+        base_dir = os.path.dirname(self.get_path())
+
+        try:
+            os.makedirs(base_dir, exist_ok=True)
+        except IOError as error:
+            log.error("Error while creating directories: %r", error)
+
         self._save_file(self.get_path(), root)
 
 
