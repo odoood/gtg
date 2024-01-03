@@ -610,30 +610,6 @@ class GenericBackend():
 
         return os.path.abspath(path)
 
-
-    def this_is_the_first_run(self, _) -> None:
-        """ Called upon the very first GTG startup.
-
-        This function is needed only in this backend, because it can be used
-        as default one. The xml parameter is an object containing GTG default
-        tasks. It will be saved to a file, and the backend will be set as
-        default.
-
-        @param xml: an xml object containing the default tasks.
-        """
-
-        filepath = self.get_path()
-        self.do_first_run_versioning()
-
-
-        self._parameters[self.KEY_DEFAULT_BACKEND] = True
-
-        # Load the newly created file
-        self.data_tree = xml.open_file(self.get_path(), 'gtgData')
-        self.task_tree = self.data_tree.find('tasklist')
-        self.tag_tree = self.data_tree.find('taglist')
-
-
     def do_first_run_versioning(self) -> None:
         """If there is an old file around needing versioning, convert it, then rename the old file."""
         root = firstrun_tasks.generate()

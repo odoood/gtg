@@ -435,15 +435,11 @@ class Requester(GObject.GObject):
                 log.error("registering a backend without pid.")
                 return None
             backend = backend_dic["backend"]
-            first_run = backend_dic["first_run"]
 
             # Checking that is a new backend
             if backend.get_id() in self.backends:
                 log.error("registering already registered backend")
                 return None
-
-            if first_run:
-                backend.this_is_the_first_run(None)
 
             self.backends[backend.get_id()] = backend
 
