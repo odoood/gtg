@@ -209,7 +209,16 @@ class GenericBackend():
         filepath = self.get_path()
 
         if not os.path.isfile(filepath):
-            self.do_first_run_versioning()
+            root = firstrun_tasks.generate()
+
+            base_dir = os.path.dirname(filepath)
+
+            try:
+                os.makedirs(base_dir, exist_ok=True)
+            except IOError as error:
+                log.error("Error while creating directories: %r", error)
+
+            self._save_file(self.get_path(), root)
 
         self.data_tree = xml.open_file(filepath, 'gtgData')
         self.task_tree = self.data_tree.find('tasklist')
@@ -609,20 +618,6 @@ class GenericBackend():
             path = os.path.join(DATA_DIR, path)
 
         return os.path.abspath(path)
-
-    def do_first_run_versioning(self) -> None:
-        """If there is an old file around needing versioning, convert it, then rename the old file."""
-        root = firstrun_tasks.generate()
-
-        base_dir = os.path.dirname(self.get_path())
-
-        try:
-            os.makedirs(base_dir, exist_ok=True)
-        except IOError as error:
-            log.error("Error while creating directories: %r", error)
-
-        self._save_file(self.get_path(), root)
-
 
     def start_get_tasks(self) -> None:
         """ This function starts submitting the tasks from the XML file into
