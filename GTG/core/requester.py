@@ -50,10 +50,10 @@ class Requester(GObject.GObject):
     """
     __gsignals__ = {'status-changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str,))}
 
-    def __init__(self, global_conf=CoreConfig()):
+    def __init__(self):
         """Construct a L{Requester}."""
         super().__init__()
-        self._config = global_conf
+        self._config = CoreConfig()
 
         # dictionary {backend_name_string: Backend instance}
         self.backends = {}
@@ -62,7 +62,6 @@ class Requester(GObject.GObject):
         self.tagfile_loaded = False
         self._tagstore = self.treefactory.get_tags_tree(self)
         self._backend_signals = BackendSignals()
-        self.conf = global_conf
         self.tag_idmap = {}
 
         # Flag when turned to true, all pending operation should be
@@ -589,7 +588,7 @@ class Requester(GObject.GObject):
 
         # we save the parameters
         for b in self.get_all_backends(disabled=True):
-            config = self.conf.get_backend_config(b.get_name())
+            config = self._config.get_backend_config(b.get_name())
 
 
             for key, value in b.get_parameters().items():
